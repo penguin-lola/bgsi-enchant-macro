@@ -15,4 +15,4 @@ keyboard.add_hotkey("f9", print_mouse_position)
 
 
 
-
+a = input("a")
