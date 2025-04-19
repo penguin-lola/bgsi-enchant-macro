@@ -7,7 +7,7 @@ import time
 
 #make sure autoit is downloaded this is official site: https://www.autoitscript.com/cgi-bin/getfile.pl?autoit3/autoit-v3-setup.zip
 #once downloaded run this in terminal pip install pyautogui keyboard autoit pywin32
-#this should work for 1920x1080 but if it doesnt you can just remove the region
+
 
 
 screenshot = pyautogui.screenshot(region = (497, 587, 253, 225))
