@@ -12,13 +12,7 @@ def print_mouse_position():
     print(f"Current mouse position: ({x}, {y})")
 keyboard.add_hotkey("f9", print_mouse_position)
 
-image = "reroll.png"
-image2 = "exit.png"
 
-location = pyautogui.locateOnScreen(image, confidence=0.9)
-print(location)
-
-a = input("")
 
 
 
