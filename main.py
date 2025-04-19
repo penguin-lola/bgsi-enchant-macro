@@ -7,9 +7,9 @@ import win32api
 import win32con
 import threading
 
-reroll = (638, 855)
-exit = (1384, 200)
-pop_up = (854, 636)
+reroll = (613, 851)
+exit = (1385, 213)
+pop_up = (852, 636)
 enchant = "V.png"
 enchant_iv = "IV.png"
 popup = "close.png"
@@ -29,6 +29,7 @@ def click():
 def check_popup():
     try:
         if pyautogui.locateOnScreen(popup, confidence=0.85):
+            print("popup")
             pyautogui.moveTo(pop_up)
             click()
             return True
@@ -37,61 +38,63 @@ def check_popup():
 
 def find_enchant():
     try:
-        if pyautogui.locateOnScreen(enchant, confidence=0.93):
-            return True
+        found = pyautogui.locateOnScreen(enchant, confidence=0.93)
+        print("found" if found else "not found")
+        return found is not None
     except pyautogui.ImageNotFoundException:
+        print("not found")
         return False
 
 def find_enchant2():
     try:
-        if pyautogui.locateOnScreen(enchant_iv, confidence=0.93):
-            return True
+        found = pyautogui.locateOnScreen(enchant_iv, confidence=0.93)
+        print("found" if found else "not found")
+        return found is not None
     except pyautogui.ImageNotFoundException:
+        print("not found")
         return False
+
+def exit_sequence():
+    for _ in range(3):
+        pyautogui.moveTo(exit)
+        click()
+        time.sleep(0.3)
 
 def main_loop():
     global running, attempts
+    print("running")
     while running:
         if check_popup():
             time.sleep(0.1)
             continue
+
         if find_enchant():
-            pyautogui.moveTo(exit)
-            click()
-            time.sleep(0.5)
-            pyautogui.moveTo(exit)
-            click()
-            time.sleep(0.5)
-            pyautogui.moveTo(exit)
-            click()
+            exit_sequence()
             break
+
         pyautogui.moveTo(reroll)
         click()
-        time.sleep(0.05)
         attempts += 1
         update_attempts()
+        time.sleep(0.15)
 
 def alt_loop():
     global running, attempts
+    print("running")
     while running:
         if check_popup():
             time.sleep(0.1)
             continue
+
         if find_enchant() or find_enchant2():
-            pyautogui.moveTo(exit)
-            click()
-            time.sleep(0.5)
-            pyautogui.moveTo(exit)
-            click()
-            time.sleep(0.5)
-            pyautogui.moveTo(exit)
-            click()
+            exit_sequence()
             break
+
         pyautogui.moveTo(reroll)
         click()
-        time.sleep(0.05)
         attempts += 1
         update_attempts()
+        time.sleep(0.05)
 
 def toggle_loop():
     global running, check_iv
@@ -118,6 +121,11 @@ def alt_button_action():
     check_iv = True
     toggle_loop()
 
+def normal_button_action():
+    global check_iv
+    check_iv = False
+    toggle_loop()
+
 def auto_clicker_task():
     while auto_clicker:
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
@@ -134,13 +142,17 @@ def toggle_auto_clicker():
     else:
         auto_clicker_label.config(text="Auto Clicker: OFF", bg="red")
 
+# GUI Setup
 root = tk.Tk()
 root.title("Auto Enchanter")
-root.geometry("300x250")
+root.geometry("300x300")
 root.resizable(False, False)
 
 status_label = tk.Label(root, text="STOPPED", bg="red", fg="white", width=20, height=2)
 status_label.pack(pady=5)
+
+normal_button = tk.Button(root, text="Start Normally", command=normal_button_action)
+normal_button.pack(pady=5)
 
 alt_button = tk.Button(root, text="Start w/ Enchant 2", command=alt_button_action)
 alt_button.pack(pady=5)
