@@ -3,11 +3,10 @@ import keyboard
 import time
 import autoit
 import tkinter as tk
-import threading
 import win32api
 import win32con
+import threading
 
-region1 = (497, 587, 253, 225)
 reroll = (638, 855)
 exit = (1384, 200)
 pop_up = (854, 636)
@@ -17,46 +16,19 @@ popup = "close.png"
 attempts = 0
 
 running = False
-clicking = False
 check_iv = False
-
-def toggle_loop():
-    global running
-    running = not running
-    if running:
-        status_label.config(text="Running", bg="green")
-        start_thread()
-    else:
-        status_label.config(text="Stopped", bg="red")
-    print(f"Running: {running}")
-
-def toggle_clicker():
-    global clicking
-    clicking = not clicking
-    if clicking:
-        clicker_label.config(text="Auto clicker: Running", bg="green")
-        start_clicker_thread()
-    else:
-        clicker_label.config(text="Auto clicker: Stopped", bg="red")
-    print(f"Clicker running: {clicking}")
-
-def toggle_iv():
-    global check_iv
-    check_iv = not check_iv
-    iv_button.config(relief=tk.SUNKEN if check_iv else tk.RAISED)
-    print(f"Check IV enabled: {check_iv}")
+auto_clicker = False
+auto_clicker_thread = None
 
 def click():
-    x, y = autoit.mouse_get_pos()
-    autoit.mouse_move(x + 10, y, 1)
-    autoit.mouse_move(x, y, 1)
+    x, y = pyautogui.position()
+    autoit.mouse_move(x + 10, y, speed=1)
+    autoit.mouse_move(x - 10, y, speed=1)
     autoit.mouse_click()
 
 def check_popup():
     try:
-        result = pyautogui.locateOnScreen(popup, confidence=0.85)
-        if result:
-            print("Popup detected")
+        if pyautogui.locateOnScreen(popup, confidence=0.85):
             pyautogui.moveTo(pop_up)
             click()
             return True
@@ -65,76 +37,124 @@ def check_popup():
 
 def find_enchant():
     try:
-        result = pyautogui.locateOnScreen(enchant, confidence=0.95, region=region1)
-        if result:
-            print("Found V")
+        if pyautogui.locateOnScreen(enchant, confidence=0.93):
             return True
-        if check_iv:
-            result_iv = pyautogui.locateOnScreen(enchant_iv, confidence=0.9, region=region1)
-            if result_iv:
-                print("Found IV")
-                return True
+    except pyautogui.ImageNotFoundException:
+        return False
+
+def find_enchant2():
+    try:
+        if pyautogui.locateOnScreen(enchant_iv, confidence=0.93):
+            return True
     except pyautogui.ImageNotFoundException:
         return False
 
 def main_loop():
-    global attempts, running
+    global running, attempts
     while running:
-        enchant_found = find_enchant()
-        if enchant_found:
+        if check_popup():
+            time.sleep(0.1)
+            continue
+        if find_enchant():
             pyautogui.moveTo(exit)
             click()
-            time.sleep(0.01)
+            time.sleep(0.5)
+            pyautogui.moveTo(exit)
             click()
-            print(f"Enchant found after {attempts} attempts.")
-            status_label.config(text="Stopped", bg="red")
-            running = False 
-        else:
-            attempts += 1
-            pyautogui.moveTo(reroll)
+            time.sleep(0.5)
+            pyautogui.moveTo(exit)
             click()
-            time.sleep(0.01)
-            check_popup()
+            break
+        pyautogui.moveTo(reroll)
+        click()
+        time.sleep(0.05)
+        attempts += 1
+        update_attempts()
 
-            if attempts % 5 == 0:
-                attempts_label.config(text=f"Attempts: {attempts}")
-        time.sleep(0.01)
-    print(f"Total attempts: {attempts}")
+def alt_loop():
+    global running, attempts
+    while running:
+        if check_popup():
+            time.sleep(0.1)
+            continue
+        if find_enchant() or find_enchant2():
+            pyautogui.moveTo(exit)
+            click()
+            time.sleep(0.5)
+            pyautogui.moveTo(exit)
+            click()
+            time.sleep(0.5)
+            pyautogui.moveTo(exit)
+            click()
+            break
+        pyautogui.moveTo(reroll)
+        click()
+        time.sleep(0.05)
+        attempts += 1
+        update_attempts()
 
-def autoclick_loop():
-    while True:
-        if clicking:
-            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
-            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
-        time.sleep(0.01)
+def toggle_loop():
+    global running, check_iv
+    if running:
+        running = False
+        update_status()
+        return
+    running = True
+    update_status()
+    loop = alt_loop if check_iv else main_loop
+    threading.Thread(target=loop, daemon=True).start()
 
-def start_thread():
-    thread = threading.Thread(target=main_loop)
-    thread.daemon = True
-    thread.start()
+def update_status():
+    if running:
+        status_label.config(text="RUNNING", bg="green")
+    else:
+        status_label.config(text="STOPPED", bg="red")
 
-def start_clicker_thread():
-    thread = threading.Thread(target=autoclick_loop)
-    thread.daemon = True
-    thread.start()
+def update_attempts():
+    attempts_label.config(text=f"Attempts: {attempts}")
+
+def alt_button_action():
+    global check_iv
+    check_iv = True
+    toggle_loop()
+
+def auto_clicker_task():
+    while auto_clicker:
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
+        time.sleep(0.05)
+
+def toggle_auto_clicker():
+    global auto_clicker, auto_clicker_thread
+    auto_clicker = not auto_clicker
+    if auto_clicker:
+        auto_clicker_label.config(text="Auto Clicker: ON", bg="green")
+        auto_clicker_thread = threading.Thread(target=auto_clicker_task, daemon=True)
+        auto_clicker_thread.start()
+    else:
+        auto_clicker_label.config(text="Auto Clicker: OFF", bg="red")
 
 root = tk.Tk()
-root.title("enchanter")
-root.geometry("400x300")
+root.title("Auto Enchanter")
+root.geometry("300x250")
+root.resizable(False, False)
 
-keyboard.add_hotkey('F8', toggle_loop)
-keyboard.add_hotkey('F6', toggle_clicker)
+status_label = tk.Label(root, text="STOPPED", bg="red", fg="white", width=20, height=2)
+status_label.pack(pady=5)
 
-status_label = tk.Label(root, text="F8 to start/stop", font=("Arial", 14), fg="white", bg="red", width=20, height=2)
-status_label.pack(pady=10)
+alt_button = tk.Button(root, text="Start w/ Enchant 2", command=alt_button_action)
+alt_button.pack(pady=5)
 
-clicker_label = tk.Label(root, text="F6 to toggle auto clicker", font=("Arial", 14), fg="white", bg="red", width=25, height=2)
-clicker_label.pack(pady=10)
+attempts_label = tk.Label(root, text="Attempts: 0", bg="white", fg="black", width=20, height=2)
+attempts_label.pack(pady=5)
 
-attempts_label = tk.Label(root, text="Attempts: 0", font=("Arial", 12), fg="white", bg="black", width=20, height=2)
-attempts_label.pack(pady=10)
+auto_clicker_label = tk.Label(root, text="Auto Clicker: OFF", bg="red", fg="white", width=20, height=2)
+auto_clicker_label.pack(pady=5)
 
-iv_button = tk.Button(root, text="Toggle IV Search", font=("Arial", 12), command=toggle_iv)
-iv_button.pack(pady=5)
+tk.Label(root, text="Press F8 to Start/Stop").pack()
+tk.Label(root, text="Press F6 to toggle Auto Clicker").pack()
+
+keyboard.add_hotkey("f8", toggle_loop)
+keyboard.add_hotkey("f6", toggle_auto_clicker)
 
 root.mainloop()
