@@ -22,8 +22,7 @@ auto_clicker_thread = None
 
 def click():
     x, y = pyautogui.position()
-    autoit.mouse_move(x + 10, y, speed=1)
-    autoit.mouse_move(x - 10, y, speed=1)
+    autoit.mouse_move(x + 5, y, speed=1)
     autoit.mouse_click()
 
 def check_popup():
@@ -58,14 +57,14 @@ def exit_sequence():
     for _ in range(3):
         pyautogui.moveTo(exit)
         click()
-        time.sleep(0.3)
+        time.sleep(0.1)
 
 def main_loop():
     global running, attempts
     print("running")
     while running:
         if check_popup():
-            time.sleep(0.1)
+            time.sleep(0.05)
             continue
 
         if find_enchant():
@@ -76,14 +75,14 @@ def main_loop():
         click()
         attempts += 1
         update_attempts()
-        time.sleep(0.15)
+        time.sleep(0.05)
 
 def alt_loop():
     global running, attempts
     print("running")
     while running:
         if check_popup():
-            time.sleep(0.1)
+            time.sleep(0.05)
             continue
 
         if find_enchant() or find_enchant2():
@@ -118,8 +117,12 @@ def update_attempts():
 
 def alt_button_action():
     global check_iv
-    check_iv = True
-    toggle_loop()
+    check_iv = not check_iv
+    alt_button.config(
+        text=f"Enchant 2: {'ON' if check_iv else 'OFF'}",
+        bg="green" if check_iv else "SystemButtonFace"
+    )
+
 
 def normal_button_action():
     global check_iv
@@ -130,7 +133,7 @@ def auto_clicker_task():
     while auto_clicker:
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
-        time.sleep(0.05)
+        time.sleep(1)
 
 def toggle_auto_clicker():
     global auto_clicker, auto_clicker_thread
@@ -142,7 +145,6 @@ def toggle_auto_clicker():
     else:
         auto_clicker_label.config(text="Auto Clicker: OFF", bg="red")
 
-# GUI Setup
 root = tk.Tk()
 root.title("Auto Enchanter")
 root.geometry("300x300")
@@ -154,8 +156,9 @@ status_label.pack(pady=5)
 normal_button = tk.Button(root, text="Start Normally", command=normal_button_action)
 normal_button.pack(pady=5)
 
-alt_button = tk.Button(root, text="Start w/ Enchant 2", command=alt_button_action)
+alt_button = tk.Button(root, text="Enchant 2: OFF", command=alt_button_action)
 alt_button.pack(pady=5)
+
 
 attempts_label = tk.Label(root, text="Attempts: 0", bg="white", fg="black", width=20, height=2)
 attempts_label.pack(pady=5)
@@ -163,8 +166,8 @@ attempts_label.pack(pady=5)
 auto_clicker_label = tk.Label(root, text="Auto Clicker: OFF", bg="red", fg="white", width=20, height=2)
 auto_clicker_label.pack(pady=5)
 
-tk.Label(root, text="Press F8 to Start/Stop").pack()
-tk.Label(root, text="Press F6 to toggle Auto Clicker").pack()
+tk.Label(root, text="F8 to Start/Stop").pack()
+tk.Label(root, text="F6 to toggle Auto Clicker").pack()
 
 keyboard.add_hotkey("f8", toggle_loop)
 keyboard.add_hotkey("f6", toggle_auto_clicker)
