@@ -133,7 +133,7 @@ def auto_clicker_task():
     while auto_clicker:
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
-        time.sleep(1)
+        time.sleep(0.001)
 
 def toggle_auto_clicker():
     global auto_clicker, auto_clicker_thread
